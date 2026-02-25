@@ -909,7 +909,7 @@ What works good (best practices) is a three step approach:
 
 1. Upload your SSH public-key to all FortiPoC's
 2. Validate access per SSH public-key authentication
-3. Changes admin password to prevent attendees mess around with your FortiPoC.    Attendees can get access per `guest/guest` and are provided the simple menu
+3. Changes admin password to prevent attendees mess around with your FortiPoC.   Attendees can get access per `guest/guest` and are provided the simple menu
 
 The above steps are part of `fpoc-to-all.sh` automated execution.
 
