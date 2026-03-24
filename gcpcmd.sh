@@ -97,14 +97,10 @@
 # 2025062001 Ferry Kemps, Updated gcpcmd command creation and PATH check
 # 2025072301 Ferry Kemps, Change the default from type fpoc (FortiPoC) to fs (Fabric Studio), optimized gcpcmd command creation on install, listpubip including TYPE selection, fix typo
 # 2025081201 Ferry Kemps, Change menu banner to Fabric Studion Tookit for GCP, changed FortiPoC to Fabric Studion on output to terminal
-<<<<<<< HEAD
-GCPCMDVERSION="2025081201"
-=======
 # 2026021301 Ferry Kemps, Full rename from FortiPoC to Fabric Studio
 # 2026030301 Ferry Kemps, Added machinetype option n1-standard-32 for Secure-AI HOL, removed --min-cpu-platform on compute instance create
 # 2026032401 Ferry Kemps, Added DNS dynamic updates to publish instances DNS records to BIND DNS-server
 GCPCMDVERSION="2026032401"
->>>>>>> a310636 (Major new option for dynamic DNS update, added machinetype n1-standard-32, removed --min-cpu-platform from conpute instance create)
 
 # Disclaimer: This tool comes without warranty of any kind.
 #             Use it at your own risk. We assume no liability for the accuracy, group-management
