@@ -98,7 +98,7 @@
 # 2025072301 Ferry Kemps, Change the default from type fpoc (FortiPoC) to fs (Fabric Studio), optimized gcpcmd command creation on install, listpubip including TYPE selection, fix typo
 # 2025081201 Ferry Kemps, Change menu banner to Fabric Studion Tookit for GCP, changed FortiPoC to Fabric Studion on output to terminal
 # 2026021301 Ferry Kemps, Full rename from FortiPoC to Fabric Studio
-# 2026030301 Ferry Kemps, Added machinetype option n1-standard-32 for Secure-AI HOL, removed --min-cpu-platform on compute instance create
+# 2026030301 Ferry Kemps, Added machinetype option n1-standard-32 for Secure-AI HOL, removed --min-cpu-platform on conpute instance create
 # 2026032401 Ferry Kemps, Added DNS dynamic updates to publish instances DNS records to BIND DNS-server
 GCPCMDVERSION="2026032401"
 
@@ -336,7 +336,6 @@ function gcplistrunning {
 
 # Function to build a Fabric Studio instance on GCP
 function gcpbuild {
-
    if [ "${CONFIGFILE}" == "" ]; then
       echo "Build file missing. Use -b option to specify or to generate fpoc-example.conf file"
       exit
@@ -363,7 +362,7 @@ function gcpbuild {
       --subnet=default --network-tier=PREMIUM \
       --maintenance-policy=MIGRATE \
       --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append \
-      --min-cpu-platform=Intel\ Broadwell --tags=fortipoc-deny-default,${WORKSHOPSOURCENETWORKS} \
+      --tags=fortipoc-deny-default,${WORKSHOPSOURCENETWORKS} \
       --image=${FPIMAGE} \
       --image-project=${GCPPROJECT} \
       --boot-disk-size=200GB \
@@ -377,6 +376,8 @@ function gcpbuild {
    sleep 90
    INSTANCEIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} | grep natIP | awk '{ print $2 }')
    echo ${INSTANCENAME} "=" ${INSTANCEIP}
+   echo "Let's wait 20 seconds to allow Fabric Studio to boot."
+   sleep 20
    if ! curl -k -q --retry 1 --connect-timeout 10 https://${INSTANCEIP}/ && echo "Fabric Studio ${INSTANCENAME} on ${INSTANCEIP} reachable"
    then
 #   [ $? != 0 ] && echo "==> Something went wrong. The new instance is not reachable"
@@ -384,64 +385,64 @@ function gcpbuild {
    fi
 
    # Now configure, load, prefetch and start PoC-definition
-   [ "${FPTRAILKEY}" != "" ] && (
-      echo "==> Registering Fabric Studio"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "reg trial ${FPTRAILKEY}"
-   )
+#   [ "${FPTRAILKEY}" != "" ] && (
+#      echo "==> Registering Fabric Studio"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "reg trial ${FPTRAILKEY}"
+#   )
    [ "${FPTITLE}" != "" ] && (
       echo "==> Setting title"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "set gui title \"${FPTITLE}\""
+      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "system hostname set \"${FPTITLE}\""
    )
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command 'set guest passwd guest'
-   [ ! -z ${LICENSESERVER} ] && (
-      echo "==> Setting licenseserver"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "set license https://${LICENSESERVER}/"
-   )
-   [ ! -z ${POCDEFINITION1} ] && (
-      echo "==> Loading poc-definition 1"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION1}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION2} ] && (
-      echo "==> Loading poc-definition 2"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION2}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION3} ] && (
-      echo "==> Loading poc-definition 3"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION3}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION4} ] && (
-      echo "==> Loading poc-definition 4"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION4}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION5} ] && (
-      echo "==> Loading poc-definition 5"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION5}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION6} ] && (
-      echo "==> Loading poc-definition 6"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION6}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION7} ] && (
-      echo "==> Loading poc-definition 7"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION7}\" refresh"
-   )
-   [ ! -z ${POCDEFINITION8} ] && (
-      echo "==> Loading poc-definition 8"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION8}\" refresh"
-   )
-   echo "==> Prefetching all images and documentation"
-   gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command 'poc prefetch all'
-   [ "${POCLAUNCH}" != "" ] && (
-      echo "==> Launching poc-definition"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc launch \"${POCLAUNCH}\""
-   )
+      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command 'system user password change --new-password Fortinet123!@ guest'
+#   [ ! -z ${LICENSESERVER} ] && (
+#      echo "==> Setting licenseserver"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "set license https://${LICENSESERVER}/"
+#   )
+#   [ ! -z ${POCDEFINITION1} ] && (
+#      echo "==> Loading poc-definition 1"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION1}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION2} ] && (
+#      echo "==> Loading poc-definition 2"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION2}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION3} ] && (
+#      echo "==> Loading poc-definition 3"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION3}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION4} ] && (
+#      echo "==> Loading poc-definition 4"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION4}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION5} ] && (
+#      echo "==> Loading poc-definition 5"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION5}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION6} ] && (
+#      echo "==> Loading poc-definition 6"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION6}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION7} ] && (
+#      echo "==> Loading poc-definition 7"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION7}\" refresh"
+#   )
+#   [ ! -z ${POCDEFINITION8} ] && (
+#      echo "==> Loading poc-definition 8"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc repo define \"${POCDEFINITION8}\" refresh"
+#   )
+#   echo "==> Prefetching all images and documentation"
+#   gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command 'poc prefetch all'
+#   [ "${POCLAUNCH}" != "" ] && (
+#      echo "==> Launching poc-definition"
+#      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "poc launch \"${POCLAUNCH}\""
+#   )
    [ "${SSHKEYPERSONAL}" != "" ] && (
       echo "==> Adding personal SSH key"
-      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "set ssh authorized keys \"${SSHKEYPERSONAL}\""
+      gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "system account ssh keys add \"${SSHKEYPERSONAL}\""
    )
-   #  [ "${FPSIMPLEMENU}" != "" ] && (echo "==> Setting GUI-mode to simple"; gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "set gui simple ${FPSIMPLEMENU}")
-   echo "==> End of Build phase <=="
-   echo ""
+#   #  [ "${FPSIMPLEMENU}" != "" ] && (echo "==> Setting GUI-mode to simple"; gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command "set gui simple ${FPSIMPLEMENU}")
+#   echo "==> End of Build phase <=="
+#   echo ""
 }
 
 # Function to bulk clone instances on GCP
@@ -673,8 +674,8 @@ function gcpaccesslist {
    FPPREPEND=$1
    ZONE=$2
    PRODUCT=$3
-   INSTANCESTART=$(($4))
-   INSTANCEEND=$(($5))
+   INSTANCESTART=$((10#$4))
+   INSTANCEEND=$((10#$5))
    echo "Listing network tags (firewall-rules) of selected instances"
    echo ""
    echo "Instancename      : network tags"
@@ -693,8 +694,9 @@ function labellist {
    FPPREPEND=$1
    ZONE=$2
    PRODUCT=$3
-   INSTANCESTART=$(($4))
-   INSTANCEEND=$(($5))
+   ZONE=$4
+   INSTANCESTART=$((10#$5))
+   INSTANCEEND=$((10#$6))
    echo "Listing labels of selected instances"
    echo ""
    echo "Instancename     : labels"
@@ -706,6 +708,99 @@ function labellist {
       LABELS=($(gcloud compute instances describe ${FPINSTANCENAME} --zone=${ZONE} --format=json | jq -c '.labels'| sed 's/{//;s/}//;s/:/=/g;s/"//g'))
       echo "${FPINSTANCENAME} : ${LABELS[*]}"
    done
+}
+
+# Function to update dns
+function dnsupdatezone {
+   DNSSERVER=$1
+   DNSHOSTPREFIX=$2
+   DNSDOMAIN=$3
+   DNSTTL=$4
+   DNSKEYNAME=$5
+   DNSKEY=$6
+   ZONE=$7
+   PRODUCT=$8
+   INSTANCESTART=$((10#${9}))
+   INSTANCEEND=$((10#${10}))
+   if [[ "${DNSSERVER}" = "not-configured" ]]; then
+     echo "DNS update config missing."
+     exit
+   fi 
+   printf "Defaults DNS-server:${CYAN}${DNSSERVER}${NOCOLOR}, Host-prefix:${CYAN}${DNSHOSTPREFIX}${NOCOLOR}, Domain:${CYAN}${DNSDOMAIN}${NOCOLOR}, TTL:${CYAN}${DNSTTL}${NOCOLOR}, DNS-keyname:${CYAN}${DNSKEYNAME}${NOCOLOR} DNS-key:${CYAN}${DNSKEY}${NOCOLOR}\n"
+   read -r -p "Use the defaults ? y/n " choice 
+   if [[ "${choice}" != "y" ]]; then
+     read -r -p " What is the host pre-fix: " DNSHOSTPREFIX
+     read -r -p " What is the domain: " DNSDOMAIN
+     read -r -p " What is the DNS server IP: " DNSSERVER
+     read -r -p " What is the DNS update key-name: " DNSKEYNAME
+     read -r -p " What is the DNS update key: " DNSKEY
+   fi
+
+   while true; do
+    read -p "What dns update (add/remove)? " action
+    
+    case "${action}" in  # convert to lowercase for easier matching
+        add)
+            ACTION="add"
+            break
+            ;;
+        remove|rm|del|delete)
+            ACTION="remove"
+            break
+            ;;
+        *)
+            echo "Invalid choice. Please use 'add' or 'remove'."
+            ;;
+    esac
+   done
+
+   for ((COUNT = INSTANCESTART; COUNT <= INSTANCEEND; COUNT++)); do
+      INSTANCENUMBER=$(printf "%03d" $COUNT)
+      if [[ ${ACTION} == "add" ]]; then
+         DNSPUBIP=$(gcloud compute instances describe ${TYPE}-${FPPREPEND}-${PRODUCT}-${INSTANCENUMBER} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+         if [[ -n ${DNSPUBIP} ]]; then
+            dnsnsupdate ${ACTION} ${DNSSERVER} ${DNSKEYNAME} ${DNSKEY} ${DNSHOSTPREFIX}${COUNT} ${DNSDOMAIN} ${DNSTTL} ${DNSPUBIP}
+         else
+            echo "ERROR: No public IP available for ${TYPE}-${FPPREPEND}-${PRODUCT}-${INSTANCENUMBER}"
+         fi
+      else
+         dnsnsupdate ${ACTION} ${DNSSERVER} ${DNSKEYNAME} ${DNSKEY} ${DNSHOSTPREFIX}${COUNT} ${DNSDOMAIN} ${DNSTTL} "dummy"
+      fi
+   done
+}
+
+# Function to dynamically update DNS record
+function dnsnsupdate {
+   ACTION=$1
+   DNSSERVER=$2
+   DNSKEYNAME=$3
+   DNSKEY=$4
+   DNSHOSTNAME=$5
+   DNSDOMAIN=$6
+   DNSTTL=$7
+   DNSPUBIP=$8
+   case "${ACTION}" in
+      add)
+         echo " Adding DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}. ${DNSTTL}  IN A ${DNSPUBIP}"
+         nsupdate -v -y hmac-sha256:${DNSKEYNAME}:${DNSKEY} << EOF
+server ${DNSSERVER}
+zone ${DNSDOMAIN}
+update add ${DNSHOSTNAME}.${DNSDOMAIN}. ${DNSTTL} A ${DNSPUBIP}
+send
+EOF
+         [ $? -eq 1 ] && echo "  [!] Failed:  ${HOSTNAME}.${DNSDOMAIN}"
+         ;;
+      remove)
+         echo " Deleting DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}."
+         nsupdate -v -y hmac-sha256:${DNSKEYNAME}:${DNSKEY} << EOF
+server ${DNSSERVER}
+zone ${DNSDOMAIN}
+update delete ${DNSHOSTNAME}.${DNSDOMAIN}. A
+send
+EOF
+         [ $? -eq 1 ] && echo "  [!] Failed:  ${HOSTNAME}.${DNSDOMAIN}"
+         ;;
+   esac
 }
 
 # Function to display the help
@@ -755,7 +850,7 @@ function displayhelp {
    echo "ARGUMENTS:"
    echo "       region  : america, asia, europe"
    echo "       product : appsec, fad, fpx, fsa, fsw, fwb, sme, test, xa or <custom-name>"
-   echo "       action  : accesslist, accessmodify, build*, clone, delete, globalaccess, labellist, labelmodify"
+   echo "       action  : accesslist, accessmodify, build*, clone, delete, dnsupdate, globalaccess, labellist, labelmodify"
    echo "                 list, listpubip, machinetype, move, rename, start, stop"
    echo ""
    echo "                *action build needs -b <conf/configfile>. Use ./gcpcmd.sh -b to generate fpoc-example.conf file"
@@ -910,6 +1005,23 @@ if [ "${EXPAND}" = "new" ]; then
    read -r -p "Your SSH public key for Fabric Studio access (optional) [${SSHKEYPERSONAL}] : " CONFSSHKEYPERSONAL
    CONFSSHKEYPERSONAL="${SSHKEYPERSONAL}"
 
+   # Obtain DNS dynamic update config
+   read -r -p "Integrate with BIND DNS server for dynamic DNS updates? (y/n)" ACTION
+   case "${ACTION}" in 
+     y|Y|yes|Yes)
+        read -r -p "DNS-server IP: " CONFDNS_SERVER
+        read -r -p "Host prefix of FQDN : " CONFDNS_HOSTPREFIX
+        read -r -p "Domain name of FQDN : " CONFDNS_DOMAIN
+        read -r -p "FQDN TTL : " CONFDNS_TTL
+        read -r -p "DNS rndc-key name : " CONFDNS_KEYNAME
+        read -r -p "DNS rndc-key (base64) : " CONFDNS_KEY
+        ;;
+     *)
+        echo "Skipping Dynamic DNS update config"
+        CONFDNS_SERVER="not-configured"
+        ;;
+    esac
+
    cat <<EOF >>${GCPCMDCONF}
 
 GCPCMD_PROJECT[${NEWPROJECTNUM}]="${CONFPROJECTNAME}"
@@ -923,6 +1035,12 @@ GCPCMD_PRODUCT[${NEWPROJECTNUM}]="test"
 GCPCMD_SSHKEYPERSONAL[${NEWPROJECTNUM}]="${CONFSSHKEYPERSONAL}"
 GCPCMD_VPC[${NEWPROJECTNUM}]=""
 GCPCMD_FIREWALLRULES[${NEWPROJECTNUM}]=""
+GCPCMD_DNS_SERVER[${NEWPROJECTNUM}]="${CONFDNS_SERVER}"
+GCPCMD_DNS_HOSTPREFIX[${NEWPROJECTNUM}]="${CONFDNS_HOSTPREFIX}"
+GCPCMD_DNS_DOMAIN[${NEWPROJECTNUM}]="${CONFDNS_DOMAIN}"
+GCPCMD_DNS_TTL[${NEWPROJECTNUM}]="${CONFDNS_TTL}"
+GCPCMD_DNS_KEYNAME[${NEWPROJECTNUM}]="${CONFDNS_KEYNAME}"
+GCPCMD_DNS_KEY[${NEWPROJECTNUM}]="${CONFDNS_KEY}"
 EOF
    echo ""
 fi
@@ -980,8 +1098,15 @@ PRODUCT="${GCPCMD_PRODUCT[${DEFAULTPROJECT}]}"
 SSHKEYPERSONAL="${GCPCMD_SSHKEYPERSONAL[${DEFAULTPROJECT}]}"
 VPC="${GCPCMD_VPC[${DEFAULTPROJECT}]}"
 FIREWALLRULES="${GCPCMD_FIREWALLRULES[${DEFAULTPROJECT}]}"
+DNS_SERVER="${GCPCMD_DNS_SERVER[${DEFAULTPROJECT}]}"
+DNS_HOSTPREFIX="${GCPCMD_DNS_HOSTPREFIX[${DEFAULTPROJECT}]}"
+DNS_DOMAIN="${GCPCMD_DNS_DOMAIN[${DEFAULTPROJECT}]}"
+DNS_TTL="${GCPCMD_DNS_TTL[${DEFAULTPROJECT}]}"
+DNS_KEYNAME="${GCPCMD_DNS_KEYNAME[${DEFAULTPROJECT}]}"
+DNS_KEY="${GCPCMD_DNS_KEY[${DEFAULTPROJECT}]}"
 #OWNER=$(echo ${LABELS} | grep owner | cut -d "=" -f 3)
 OWNER=$(echo ${LABELS} | awk -F "owner=" '{ print $2}')
+[ -z ${DNS_SERVER} ] && DNS_SERVER="not-configured"
 
 # Check online if there is a newer Version
 ONLINEVERSION=$(curl --fail --silent --retry-max-time 1 --user-agent ${GCPCMDVERSION}-${GCPPROJECT}-${FPPREPEND} http://www.4xion.com/gcpcmdversion.txt)
@@ -1168,7 +1293,7 @@ if [ $# -lt 1 ]; then
 fi
 
 # Populate given arguments
-LABELS="purpose=FabricStudio,owner=${OWNER},group=${FPGROUP}"
+LABELS="purpose=fabricstudio,owner=${OWNER},group=${FPGROUP}"
 ARGUMENT1=$1
 ARGUMENT2=$2
 ARGUMENT3=$3
@@ -1270,6 +1395,7 @@ build) ACTION="build" ;;
 clone) ACTION="clone" ;;
 clonebulk) ACTION="clonebulk" ;;
 delete) ACTION="delete" ;;
+dnsupdate) ACTION="dnsupdate" ;;
 globalaccess) ACTION="globalaccess" ;;
 globalaccesslist) ACTION="globalaccesslist" ;;
 labellist) ACTION="labellist";;
@@ -1282,17 +1408,17 @@ rename) ACTION="rename";;
 start) ACTION="start" ;;
 stop) ACTION="stop" ;;
 *)
-   echo ""; echo " [ERROR: ACTION] Specify: accesslist, accessmodify, build, clone, clonebulk,delete, globalaccess, globalaccesslist, labellist, labelmodify, list, listpubip, machinetype, move, rename, start or stop"
+   echo ""; echo " [ERROR: ACTION] Specify: accesslist, accessmodify, build, clone, clonebulk,delete, dnsupdate, globalaccess, globalaccesslist, labellist, labelmodify, list, listpubip, machinetype, move, rename, start or stop"
    exit
    ;;
 esac
 
 displayheader
-if [[ ${ACTION} == accesslist || ${ACTION} == accessmodify || ${ACTION} == build || ${ACTION} == delete || ${ACTION} == globalaccess || ${ACTION} == globalaccesslist || ${ACTION} == "labellist" || ${ACTION} == "labelmodify" || ${ACTION} == machinetype || ${ACTION} == move || ${ACTION} == rename || ${ACTION} == start || ${ACTION} == stop ]]; then
+if [[ ${ACTION} == accesslist || ${ACTION} == accessmodify || ${ACTION} == build || ${ACTION} == delete || ${ACTION} == dnsupdate || ${ACTION} == globalaccess || ${ACTION} == globalaccesslist || ${ACTION} == "labellist" || ${ACTION} == "labelmodify" || ${ACTION} == machinetype || ${ACTION} == move || ${ACTION} == rename || ${ACTION} == start || ${ACTION} == stop ]]; then
    read -r -p " Enter amount of Fabric Studio's : " FPCOUNT
    read -r -p " Enter start of numbered range : " FPNUMSTART
    if [ ${ACTION} == "machinetype" ]; then
-      read -r -p " select machine-type : 0) e2-medium 1) n1-standard-1, 2) n1-standard-2, 3) n1-standard-4, 4) n1-standard-8, 5) n1-standard-16 : " NEWMACHINETYPE
+      read -r -p " select machine-type : 0) e2-medium 1) n1-standard-1, 2) n1-standard-2, 3) n1-standard-4, 4) n1-standard-8, 5) n1-standard-16 6) n1-standard-32: " NEWMACHINETYPE
       case ${NEWMACHINETYPE} in
       0) MACHINETYPE="e2-medium" ;;
       1) MACHINETYPE="n1-standard-1" ;;
@@ -1300,6 +1426,7 @@ if [[ ${ACTION} == accesslist || ${ACTION} == accessmodify || ${ACTION} == build
       3) MACHINETYPE="n1-standard-4" ;;
       4) MACHINETYPE="n1-standard-8" ;;
       5) MACHINETYPE="n1-standard-16" ;;
+      6) MACHINETYPE="n1-standard-32" ;;
       *)
          echo "Wrong machine type given"
          echo ""
@@ -1395,12 +1522,14 @@ export -f gcpaccessmodify gcpbuild gcpstart gcpstop gcpdelete gcpclone gcpcloneb
 export PARALLELOPT CONFIGFILE GCPPROJECT FPIMAGE MACHINETYPE WORKSHOPSOURCEANY LABELS LABEL NEWLABEL NETWORKTAG NEWNETWORKTAG FPTRAILKEY FPPREPEND \
 POCDEFINITION1 POCDEFINITION2 POCDEFINITION3 POCDEFINITION4 POCDEFINITION5 POCDEFINITION6 POCDEFINITION7 POCDEFINITION8 LICENSESERVER \
 POCLAUNCH NEWMACHINETYPE GCPSERVICEACCOUNT SSHKEYPERSONAL WORKSHOPSOURCENETWORKS DSTZONE NEWPRODUCTNAME TYPE
+export DNS_SERVER DNS_HOSTPREFIX DNS_DOMAIN DNS_TTL DNS_KEY
 
 case ${ACTION} in
 accesslist) gcpaccesslist ${FPPREPEND} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
 build) parallel ${PARALLELOPT} -j0 gcpbuild ${FPPREPEND} ${ZONE} ${PRODUCT} "${FPTITLE}" ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
 clone) gcpclone;;
 delete) parallel ${PARALLELOPT} -j0 gcpdelete ${FPPREPEND} ${ZONE} ${PRODUCT} ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
+dnsupdate) dnsupdatezone ${DNS_SERVER} ${DNS_HOSTPREFIX} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_KEYNAME} ${DNS_KEY} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
 globalaccess) parallel ${PARALLELOPT} -j0 gcpglobalaccess ${FPPREPEND} ${ZONE} ${PRODUCT} ${GLOBALACCESS} ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
 labellist) labellist ${FPPREPEND} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
 labelmodify) parallel ${PARALLELOPT} -j0 gcplabelmodify ${FPPREPEND} ${ZONE} ${PRODUCT} ${LABELACTION} ${LABEL} ${NEWLABEL} ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
