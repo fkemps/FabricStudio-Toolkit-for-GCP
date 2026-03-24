@@ -100,7 +100,8 @@
 # 2026021301 Ferry Kemps, Full rename from FortiPoC to Fabric Studio
 # 2026030301 Ferry Kemps, Added machinetype option n1-standard-32 for Secure-AI HOL, removed --min-cpu-platform on conpute instance create
 # 2026032401 Ferry Kemps, Added DNS dynamic updates to publish instances DNS records to BIND DNS-server
-GCPCMDVERSION="2026032401"
+# 2026032402 Ferry Kemps, Updates for DNS dynamic updates on building, cloning, deleting of instances
+GCPCMDVERSION="2026032402"
 
 # Disclaimer: This tool comes without warranty of any kind.
 #             Use it at your own risk. We assume no liability for the accuracy, group-management
@@ -370,6 +371,13 @@ function gcpbuild {
       --boot-disk-device-name=${INSTANCENAME} \
       --labels=${LABELS}
 
+   # Attempt to do dynamic DNS update
+   INSTANCENUMBER=$((10#${INSTANCE}))
+   echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   DNS_PUBIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+   ACTION="add"
+   dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_PUBIP}
+
    # Give Google 60 seconds to start the instance
    echo ""
    echo "==> Sleeping 90 seconds to allow Fabric Studio booting up"
@@ -461,6 +469,14 @@ function gcpclonebulk {
       --project=${GCPPROJECT} \
       --zone=${ZONE} \
       --source-machine-image ${CLONEMACHINEIMAGE} > /dev/null 2>&1
+
+   #INSTANCE Attempt to do dynamic DNS update
+   INSTANCENUMBER=$((10#${INSTANCE}))
+   echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   DNS_PUBIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+   ACTION="add"
+   dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_PUBIP}
+
 }
 
 # Function to clone instance(s) on GCP
@@ -566,6 +582,11 @@ function gcpdelete {
    INSTANCENAME="${TYPE}-${FPPREPEND}-${PRODUCT}-${INSTANCE}"
    echo "==> Deleting instance ${INSTANCENAME}"
    echo yes | gcloud compute instances delete ${INSTANCENAME} --zone=${ZONE} > /dev/null 2>&1
+   # Attempt to do dynamic DNS update
+   INSTANCENUMBER=$((10#${INSTANCE}))
+   echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   ACTION="delete"
+   dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} "dummy"
 }
 
 # Function to change instance machinetype
@@ -728,28 +749,30 @@ function dnsupdatezone {
    fi 
    printf "Defaults DNS-server:${CYAN}${DNSSERVER}${NOCOLOR}, Host-prefix:${CYAN}${DNSHOSTPREFIX}${NOCOLOR}, Domain:${CYAN}${DNSDOMAIN}${NOCOLOR}, TTL:${CYAN}${DNSTTL}${NOCOLOR}, DNS-keyname:${CYAN}${DNSKEYNAME}${NOCOLOR} DNS-key:${CYAN}${DNSKEY}${NOCOLOR}\n"
    read -r -p "Use the defaults ? y/n " choice 
-   if [[ "${choice}" != "y" ]]; then
-     read -r -p " What is the host pre-fix: " DNSHOSTPREFIX
-     read -r -p " What is the domain: " DNSDOMAIN
-     read -r -p " What is the DNS server IP: " DNSSERVER
-     read -r -p " What is the DNS update key-name: " DNSKEYNAME
-     read -r -p " What is the DNS update key: " DNSKEY
-   fi
+   case "${choice}" in
+      n|N|no|No|NO)
+        read -r -p " What is the host pre-fix: " DNSHOSTPREFIX
+        read -r -p " What is the domain: " DNSDOMAIN
+        read -r -p " What is the DNS server IP: " DNSSERVER
+        read -r -p " What is the DNS update key-name: " DNSKEYNAME
+        read -r -p " What is the DNS update key: " DNSKEY
+        ;;
+   esac
 
    while true; do
-    read -p "What dns update (add/remove)? " action
+    read -p "Type of  DNS update (add/delete)? " action
     
-    case "${action}" in  # convert to lowercase for easier matching
+    case "${action}" in  
         add)
             ACTION="add"
             break
             ;;
         remove|rm|del|delete)
-            ACTION="remove"
+            ACTION="delete"
             break
             ;;
         *)
-            echo "Invalid choice. Please use 'add' or 'remove'."
+            echo "Invalid choice. Please use 'add' or 'delete'."
             ;;
     esac
    done
@@ -790,7 +813,7 @@ send
 EOF
          [ $? -eq 1 ] && echo "  [!] Failed:  ${HOSTNAME}.${DNSDOMAIN}"
          ;;
-      remove)
+      delete)
          echo " Deleting DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}."
          nsupdate -v -y hmac-sha256:${DNSKEYNAME}:${DNSKEY} << EOF
 server ${DNSSERVER}
@@ -1518,11 +1541,11 @@ fi
 printf "==> Lets go...using Owner=${CYAN}${OWNER}${NOCOLOR} or Group=${CYAN}${FPGROUP}${NOCOLOR}, Project=${CYAN}${GCPPROJECT}${NOCOLOR}, Zone=${CYAN}${ZONE}${NOCOLOR}, Product=${CYAN}${PRODUCT}${NOCOLOR}, Action=${CYAN}${ACTION}${NOCOLOR}\n"
 echo
 
-export -f gcpaccessmodify gcpbuild gcpstart gcpstop gcpdelete gcpclone gcpclonebulk gcpmachinetype gcpmove gcprename gcpglobalaccess gcplabelmodify
+export -f gcpaccessmodify gcpbuild gcpstart gcpstop gcpdelete gcpclone gcpclonebulk gcpmachinetype gcpmove gcprename gcpglobalaccess gcplabelmodify dnsnsupdate
 export PARALLELOPT CONFIGFILE GCPPROJECT FPIMAGE MACHINETYPE WORKSHOPSOURCEANY LABELS LABEL NEWLABEL NETWORKTAG NEWNETWORKTAG FPTRAILKEY FPPREPEND \
 POCDEFINITION1 POCDEFINITION2 POCDEFINITION3 POCDEFINITION4 POCDEFINITION5 POCDEFINITION6 POCDEFINITION7 POCDEFINITION8 LICENSESERVER \
 POCLAUNCH NEWMACHINETYPE GCPSERVICEACCOUNT SSHKEYPERSONAL WORKSHOPSOURCENETWORKS DSTZONE NEWPRODUCTNAME TYPE
-export DNS_SERVER DNS_HOSTPREFIX DNS_DOMAIN DNS_TTL DNS_KEY
+export DNS_SERVER DNS_HOSTPREFIX DNS_DOMAIN DNS_TTL DNS_KEYNAME DNS_KEY
 
 case ${ACTION} in
 accesslist) gcpaccesslist ${FPPREPEND} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
