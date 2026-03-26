@@ -813,6 +813,10 @@ function dnsnsupdate {
    DNSDOMAIN=$6
    DNSTTL=$7
    DNSPUBIP=$8
+   if [[ "${DNSSERVER}" = "not-configured" ]]; then
+     echo "Skipping DNS update, not configured."
+     exit
+   fi 
    case "${ACTION}" in
       add)
          echo " Adding DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}. ${DNSTTL}  IN A ${DNSPUBIP}"
