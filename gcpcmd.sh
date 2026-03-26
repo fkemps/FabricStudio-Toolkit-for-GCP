@@ -102,7 +102,8 @@
 # 2026032401 Ferry Kemps, Added DNS dynamic updates to publish instances DNS records to BIND DNS-server
 # 2026032402 Ferry Kemps, Updates for DNS dynamic updates on building, cloning, deleting of instances
 # 2026032402 Ferry Kemps, Updates for DNS dynamic updates on start, stop
-GCPCMDVERSION="2026032501"
+# 2026032601 Ferry Kemps, Introduced the toggle to perform DNS updates
+GCPCMDVERSION="2026032601"
 
 # Disclaimer: This tool comes without warranty of any kind.
 #             Use it at your own risk. We assume no liability for the accuracy, group-management
@@ -197,6 +198,23 @@ function checkfirewallrules() {
       #echo "GCPCMD_FIREWALLRULES[${DEFAULTPROJECT}]=\"validated\"" >> ${GCPCMDCONF}
       sed -i '' "s/GCPCMD_FIREWALLRULES\[${DEFAULTPROJECT}\].*/GCPCMD_FIREWALLRULES[${DEFAULTPROJECT}]=\"validated\"/" "${GCPCMDCONF}"
    fi
+}
+function checkdnsupdate {
+   while true; do read -r -p " Perform DNS updates y/n? " choice
+   DNSUPDATE=$(echo "$choice" | tr '[:upper;]' '[:lower:]')
+   case ${DNSUPDATE} in
+      y|yes)
+         #perform DNS update
+         export DNSUPDATE
+         return
+         ;;
+      n|no)
+         #skip DNS updatea
+         export DNSUPDATE
+         return
+         ;;
+    esac
+    done
 }
 
 function togglefirewallruleany() {
@@ -473,7 +491,7 @@ function gcpclonebulk {
 
    #INSTANCE Attempt to do dynamic DNS update
    INSTANCENUMBER=$((10#${INSTANCE}))
-   echo "   - Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   #echo "   - Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
    DNS_PUBIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
    ACTION="add"
    dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_PUBIP}
@@ -501,6 +519,7 @@ function gcpclone {
    if [ ! -z ${SET_FPGROUP} ] && [ ${SET_FPGROUP} == "true" ]; then
       FPGROUP=${OVERRIDE_FPGROUP}
    fi
+   checkdnsupdate
    echo ""
    read -r -p "Okay to ${ACTION} ${CLONESOURCE} to ${TYPE}-${FPPREPEND}-${PRODUCT}-${FPNUMSTARTUI} till ${TYPE}-${FPPREPEND}-${PRODUCT}-${FPNUMENDUI}, Project=${GCPPROJECT}, region=${ZONE}.   y/n? " choice
    [ "${choice}" != "y" ] && exit
@@ -814,12 +833,16 @@ function dnsnsupdate {
    DNSTTL=$7
    DNSPUBIP=$8
    if [[ "${DNSSERVER}" = "not-configured" ]]; then
-     echo "Skipping DNS update, not configured."
+     echo "    Skipping DNS update, not configured."
      exit
    fi 
+   if [[ "${DNSUPDATE}" = "n" ]]; then
+     echo "    Skipping DNS update."
+     exit
+   fi
    case "${ACTION}" in
       add)
-         echo " Adding DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}. ${DNSTTL}  IN A ${DNSPUBIP}"
+         echo "    Adding DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}. ${DNSTTL}  IN A ${DNSPUBIP}"
          nsupdate -v -y hmac-sha256:${DNSKEYNAME}:${DNSKEY} << EOF
 server ${DNSSERVER}
 zone ${DNSDOMAIN}
@@ -829,7 +852,7 @@ EOF
          [ $? -eq 1 ] && echo "  [!] Failed:  ${HOSTNAME}.${DNSDOMAIN}"
          ;;
       delete)
-         echo " Deleting DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}."
+         echo "    Deleting DNS record: ${DNSHOSTNAME}.${DNSDOMAIN}."
          nsupdate -v -y hmac-sha256:${DNSKEYNAME}:${DNSKEY} << EOF
 server ${DNSSERVER}
 zone ${DNSDOMAIN}
@@ -1548,6 +1571,7 @@ if [[ ${ACTION} == accesslist || ${ACTION} == accessmodify || ${ACTION} == build
    FPNUMSTART=$(printf "%03d" ${FPNUMSTART})
    FPNUMEND=$(printf "%03d" ${FPNUMEND})
 
+   checkdnsupdate
    echo ""
    read -r -p "Okay to ${ACTION} ${TYPE}-${FPPREPEND}-${PRODUCT}-${FPNUMSTART} till ${TYPE}-${FPPREPEND}-${PRODUCT}-${FPNUMEND}, Project=${GCPPROJECT}, region=${ZONE}.   y/n? " choice
    [ "${choice}" != "y" ] && exit
@@ -1556,18 +1580,18 @@ fi
 printf "==> Lets go...using Owner=${CYAN}${OWNER}${NOCOLOR} or Group=${CYAN}${FPGROUP}${NOCOLOR}, Project=${CYAN}${GCPPROJECT}${NOCOLOR}, Zone=${CYAN}${ZONE}${NOCOLOR}, Product=${CYAN}${PRODUCT}${NOCOLOR}, Action=${CYAN}${ACTION}${NOCOLOR}\n"
 echo
 
-export -f gcpaccessmodify gcpbuild gcpstart gcpstop gcpdelete gcpclone gcpclonebulk gcpmachinetype gcpmove gcprename gcpglobalaccess gcplabelmodify dnsnsupdate
+export -f gcpaccessmodify gcpbuild gcpstart gcpstop gcpdelete gcpclone gcpclonebulk gcpmachinetype gcpmove gcprename gcpglobalaccess gcplabelmodify dnsnsupdate checkdnsupdate
 export PARALLELOPT CONFIGFILE GCPPROJECT FPIMAGE MACHINETYPE WORKSHOPSOURCEANY LABELS LABEL NEWLABEL NETWORKTAG NEWNETWORKTAG FPTRAILKEY FPPREPEND \
 POCDEFINITION1 POCDEFINITION2 POCDEFINITION3 POCDEFINITION4 POCDEFINITION5 POCDEFINITION6 POCDEFINITION7 POCDEFINITION8 LICENSESERVER \
 POCLAUNCH NEWMACHINETYPE GCPSERVICEACCOUNT SSHKEYPERSONAL WORKSHOPSOURCENETWORKS DSTZONE NEWPRODUCTNAME TYPE
-export DNS_SERVER DNS_HOSTPREFIX DNS_DOMAIN DNS_TTL DNS_KEYNAME DNS_KEY
+export DNS_SERVER DNS_HOSTPREFIX DNS_DOMAIN DNS_TTL DNS_KEYNAME DNS_KEY DNSUPDATE
 
 case ${ACTION} in
 accesslist) gcpaccesslist ${FPPREPEND} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
 build) parallel ${PARALLELOPT} -j0 gcpbuild ${FPPREPEND} ${ZONE} ${PRODUCT} "${FPTITLE}" ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
 clone) gcpclone;;
 delete) parallel ${PARALLELOPT} -j0 gcpdelete ${FPPREPEND} ${ZONE} ${PRODUCT} ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
-dnsupdate) dnsupdatezone ${DNS_SERVER} ${DNS_HOSTPREFIX} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_KEYNAME} ${DNS_KEY} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
+dnsupdate) dnsupdatezone ${DNS_SERVER} ${DNS_HOSTPREFIX} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_KEYNAME} ${DNS_KEY} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ${DNSUPDATE} ;;
 globalaccess) parallel ${PARALLELOPT} -j0 gcpglobalaccess ${FPPREPEND} ${ZONE} ${PRODUCT} ${GLOBALACCESS} ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
 labellist) labellist ${FPPREPEND} ${ZONE} ${PRODUCT} ${FPNUMSTART} ${FPNUMEND} ;;
 labelmodify) parallel ${PARALLELOPT} -j0 gcplabelmodify ${FPPREPEND} ${ZONE} ${PRODUCT} ${LABELACTION} ${LABEL} ${NEWLABEL} ::: $(seq -f%03g ${FPNUMSTART} ${FPNUMEND}) ;;
