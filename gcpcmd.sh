@@ -755,6 +755,7 @@ function dnsupdatezone {
    INSTANCEEND=$((10#${10}))
    if [[ "${DNSSERVER}" = "not-configured" ]]; then
      echo "DNS update config missing."
+     echo "Use gcpcmd -d to delete your preferences and onboard again"
      exit
    fi 
    printf "Defaults DNS-server:${CYAN}${DNSSERVER}${NOCOLOR}, Host-prefix:${CYAN}${DNSHOSTPREFIX}${NOCOLOR}, Domain:${CYAN}${DNSDOMAIN}${NOCOLOR}, TTL:${CYAN}${DNSTTL}${NOCOLOR}, DNS-keyname:${CYAN}${DNSKEYNAME}${NOCOLOR} DNS-key:${CYAN}${DNSKEY}${NOCOLOR}\n"
