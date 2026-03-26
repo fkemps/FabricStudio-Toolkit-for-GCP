@@ -101,7 +101,8 @@
 # 2026030301 Ferry Kemps, Added machinetype option n1-standard-32 for Secure-AI HOL, removed --min-cpu-platform on conpute instance create
 # 2026032401 Ferry Kemps, Added DNS dynamic updates to publish instances DNS records to BIND DNS-server
 # 2026032402 Ferry Kemps, Updates for DNS dynamic updates on building, cloning, deleting of instances
-GCPCMDVERSION="2026032402"
+# 2026032402 Ferry Kemps, Updates for DNS dynamic updates on start, stop
+GCPCMDVERSION="2026032501"
 
 # Disclaimer: This tool comes without warranty of any kind.
 #             Use it at your own risk. We assume no liability for the accuracy, group-management
@@ -373,7 +374,7 @@ function gcpbuild {
 
    # Attempt to do dynamic DNS update
    INSTANCENUMBER=$((10#${INSTANCE}))
-   echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   echo "   - Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
    DNS_PUBIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
    ACTION="add"
    dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_PUBIP}
@@ -472,7 +473,7 @@ function gcpclonebulk {
 
    #INSTANCE Attempt to do dynamic DNS update
    INSTANCENUMBER=$((10#${INSTANCE}))
-   echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   echo "   - Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
    DNS_PUBIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
    ACTION="add"
    dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_PUBIP}
@@ -559,6 +560,11 @@ function gcpstart {
    INSTANCENAME="${TYPE}-${FPPREPEND}-${PRODUCT}-${INSTANCE}"
    echo "==> Starting instance ${INSTANCENAME}"
    gcloud compute instances start ${INSTANCENAME} --zone=${ZONE}
+   INSTANCENUMBER=$((10#${INSTANCE}))
+   echo "   - Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   DNS_PUBIP=$(gcloud compute instances describe ${INSTANCENAME} --zone=${ZONE} --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+   ACTION="add"
+   dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} ${DNS_PUBIP}
 }
 
 # Function to stop instance
@@ -571,6 +577,10 @@ function gcpstop {
    echo "==> Stopping instance ${INSTANCENAME}"
    #  gcloud compute ssh admin@${INSTANCENAME} --zone ${ZONE} --command 'poc eject' # not working if admin pwd is set
    gcloud compute instances stop ${INSTANCENAME} --zone=${ZONE} --quiet #> /dev/null 2>&1
+   INSTANCENUMBER=$((10#${INSTANCE}))
+   #echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   ACTION="delete"
+   dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} "dummy"
 }
 
 # Function to delete instance
@@ -584,7 +594,7 @@ function gcpdelete {
    echo yes | gcloud compute instances delete ${INSTANCENAME} --zone=${ZONE} > /dev/null 2>&1
    # Attempt to do dynamic DNS update
    INSTANCENUMBER=$((10#${INSTANCE}))
-   echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
+   #echo " Attempt to perform a dynamic DNS update of ${INSTANCENAME} as ${DNS_HOSTPREFIX}${INSTANCENUMBER}.${DNS_DOMAIN}."
    ACTION="delete"
    dnsnsupdate ${ACTION} ${DNS_SERVER} ${DNS_KEYNAME} ${DNS_KEY} ${DNS_HOSTPREFIX}${INSTANCENUMBER} ${DNS_DOMAIN} ${DNS_TTL} "dummy"
 }
@@ -878,7 +888,7 @@ function displayhelp {
    echo ""
    echo "                *action build needs -b <conf/configfile>. Use ./gcpcmd.sh -b to generate fpoc-example.conf file"
    echo ""
-   [ "${NEWVERSION}" = "true" ] && echo "***** Newer version ${ONLINEVERSION} is available online on GitHub (use 'git pull' to update) *****"
+   [ "${NEWVERSION}" = "true" ] && printf ${GREENREVERSEDNEW}"***** New version ${ONLINEVERSION} is available online on GitHub (use 'git pull' to update) *****"${NOCOLOR}
    echo ""
 }
 
