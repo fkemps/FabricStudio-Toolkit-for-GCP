@@ -1,7 +1,7 @@
 # Fabric Studio Toolkit for Google Cloud Platform
 
 <p align="center">
-  <img width="314" height="375" src="img/FortiPoConGCP.png">
+  <img width="314" height="375" src="img/FabricStudioonGCP.png">
 </p>
 
 Manage and configure Fabric Studio instances on Google Cloud Platform (GCP).   
@@ -12,7 +12,7 @@ The toolkit allows you to:
 * **Handle GCP instances**: Build, Clone, Delete, Global publish, Machine-type change, List, Listpubip, Start, Stop (gcpcmd.sh)
 * **Tweak Fabric Studio's**: Make config changes on running Fabric Studio instances (fpoc-to-all.sh)
 
-![](img/FortiPoCflow.png)
+![](img/FabricStudioflow.png)
 
 ## Prerequisites
 You will need access to GCP and prepare your local environment
@@ -25,7 +25,7 @@ You will need access to GCP and prepare your local environment
 * Locally installed program `jq` ([Install jq on Mac OSX](https://brewinstall.org/install-jq-on-mac-with-brew/)) (Linux: apt install jq)
 
 ## Obtaining Scripts
-You can obtain the latest releases of the scripts from GitHub [https://github.com/fkemps/FortiPoC-Toolkit-for-GCP.git](https://github.com/fkemps/FortiPoC-Toolkit-for-GCP.git)
+You can obtain the latest releases of the scripts from GitHub [https://github.com/fkemps/FabricStudio-Toolkit-for-GCP.git](https://github.com/fkemps/FabricStudio-Toolkit-for-GCP.git)
 
 ## Install
 No package installation is needed besides those listed in the prerequisites section.   
@@ -56,14 +56,14 @@ The directory structure and files explained
 If you need to deploy your Fabric Studio in a GCP project where the Fabric Studio image is not available yet, you need to type the commands below because GCP only accepts tar.gz of a raw disk.
 
 ```
-qemu-img dd -f vmdk -O raw bs=4M count=1K if=fortipoc.vmdk of=disk.raw
-tar -cvzf fortipoc-VER.tar.gz disk.raw
-gsutil cp fortipoc-VER.tar.gz gs://YOUR_BUCKET/
-gcloud compute images create fortipoc-VER \
+qemu-img dd -f vmdk -O raw bs=4M count=1K if=FabricStudio.vmdk of=disk.raw
+tar -cvzf FabricStudio-VER.tar.gz disk.raw
+gsutil cp FabricStudio-VER.tar.gz gs://YOUR_BUCKET/
+gcloud compute images create FabricStudio-VER \
   --project=YOUR_PROJECT \
-  --source-uri gs://YOUR_BUCKET/fortipoc-VER.tar.gz \
+  --source-uri gs://YOUR_BUCKET/FabricStudio-VER.tar.gz \
   --licenses "https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx" \
-  --family fortipoc
+  --family FabricStudio
 ```
 
 To start Fabric Studio in GCP you need either to add an extra disk or to tell GCP that you want to extend the 4GB base image to the size you need (64GB is a minimum). The second solution is easier if you plan to build golden images of your PoCs.
@@ -73,9 +73,9 @@ Alternatively you could ask me for an image to upload to GCP.
 Create a compute image per:
 
 ```
-gcloud compute images create "fortipoc-1714-test" --project=project-name \
---source-uri gs://fortipoc_bucket/fortipoc-1.7.14-clear.tar.gz \
---licenses "https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx" --family fortipoc
+gcloud compute images create "fabricstudio-1714-test" --project=project-name \
+--source-uri gs://fabricstudio_bucket/fabricstudio-1.7.14-clear.tar.gz \
+--licenses "https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx" --family fabricstudio
 ```
 
 **Security**   
@@ -99,7 +99,7 @@ As part of the configuration you need to have your **GCP Project ID**. This can 
 
 ```
 -------------------------------------------------------
- Welcome to FortiPoc Toolkit for Google Cloud Platform
+ Welcome to Fabric Studio Toolkit for Google Cloud Platform
 -------------------------------------------------------
 
 This is your first time use of gcpcmd.sh and no preferences are set. Let's set them!
@@ -130,13 +130,13 @@ Copy fpoc-example.conf to conf directory with an descriptive name for your workl
 #GCPPROJECT="cse-projects-000000"
 #GCPSERVICEACCOUNT="000000000-compute@developer.gserviceaccount.com"
 #FPPREPEND="fl"
-#LABELS="fortipoc=,owner=flastname"
+#LABELS="fabricstudio=,owner=flastname"
 #LICENSESERVER=""
 
 # --- edits below this line ---
 # Specify Fabric Studio instance details.
 MACHINETYPE="n1-standard-4"
-FPIMAGE="fortipoc-1-7-14-clear"
+FPIMAGE="fabricstudio-1-7-14-clear"
 #FPSIMPLEMENU="enable"
 FPTRAILKEY='ES-xamadrid-201907:765eb11f6523382c10513b66a8a4daf5'
 #GCPREPO=""
@@ -163,24 +163,26 @@ This allows you to **Build**, **Clone**, **Start**, **Stop**, **Delete** and **l
 `./gcpcmd.sh`
 
 ```
-
- _____          _   _ ____              _____           _ _    _ _      __               ____  ____ ____
-|  ___|__  _ __| |_(_)  _ \ ___   ___  |_   _|__   ___ | | | _(_) |_   / _| ___  _ __   / ___|/ ___|  _ \
-| |_ / _ \|  __| __| | |_) / _ \ / __|   | |/ _ \ / _ \| | |/ / | __| | |_ / _ \|  __| | |  _| |   | |_) |
-|  _| (_) | |  | |_| |  __/ (_) | (__    | | (_) | (_) | |   <| | |_  |  _| (_) | |    | |_| | |___|  __/
-|_|  \___/|_|   \__|_|_|   \___/ \___|   |_|\___/ \___/|_|_|\_\_|\__| |_|  \___/|_|     \____|\____|_|
-(Version: 2024081601)
+   _____     _          _        ____  _             _ _
+  |  ___|_ _| |__  _ __(_) ___  / ___|| |_ _   _  __| (_) ___
+  | |_ / _  |  _ \|  __| |/ __| \___ \| __| | | |/ _  | |/ _ \
+  |  _| (_| | |_) | |  | | (__   ___) | |_| |_| | (_| | | (_) |
+  |_|  \__,_|_.__/|_|  |_|\___| |____/ \__|\__,_|\__,_|_|\___/
+   _____           _ _    _ _      __               ____  ____ ____
+  |_   _|__   ___ | | | _(_) |_   / _| ___  _ __   / ___|/ ___|  _ \
+    | |/ _ \ / _ \| | |/ / | __| | |_ / _ \|  __| | |  _| |   | |_) |
+    | | (_) | (_) | |   <| | |_  |  _| (_) | |    | |_| | |___|  __/
+    |_|\___/ \___/|_|_|\_\_|\__| |_|  \___/|_|     \____|\____|_|
+(Version: 2026032601)
 
 Selected project : fkemps-cse-labs
-Default deployment region: europe-west3-a
+Default deployment region: europe-west4-a
 Personal instance identification: fk
-Default product: event
+Default product: test
 
-Usage: /usr/local/bin/gcpcmd [OPTIONS] [ARGUMENTS]
-       /usr/local/bin/gcpcmd [OPTIONS] <region> <product> <action>
+Usage: /usr/local/bin/gcpcmd [OPTIONS] [ARGUMENTS] e.g. /usr/local/bin/gcpcmd -z europe-west1-a -i fl <region> <product> <action>
        /usr/local/bin/gcpcmd [OPTIONS] <-b configfile> <region> <product> build
-       /usr/local/bin/gcpcmd [OPTIONS] [region] [product] list
-       /usr/local/bin/gcpcmd [OPTIONS] [region] [product] listpubip
+       /usr/local/bin/gcpcmd [OPTIONS] [region] [product] list|listpubip
 OPTIONS:
         -b    --build-file                     File for building instances. Leave blank to generate example
         -d    --delete-config                  Delete default user config settings
@@ -199,16 +201,17 @@ OPTIONS:
         -p    --preferences                    Show personal config preferences
         -pa   --project-add                    Add GCP project to preferences
         -ps   --project-select                 Select project on GCP
-        -t    --type                           Override default type name (fpoc)
+        -t    --type                           Override default type name (fs)
         -ui   --upload-image                   Upload image to build an instance
         -z    --zone                           Override default region zone
 ARGUMENTS:
        region  : america, asia, europe
        product : appsec, fad, fpx, fsa, fsw, fwb, sme, test, xa or <custom-name>
-       action  : accesslist, accessmodify, build*, clone, delete, globalaccess, labellist, labelmodify
+       action  : accesslist, accessmodify, build*, clone, delete, dnsupdate, globalaccess, labellist, labelmodify
                  list, listpubip, machinetype, move, rename, start, stop
 
                 *action build needs -b <conf/configfile>. Use ./gcpcmd.sh -b to generate fpoc-example.conf file
+
 
 ```
 
@@ -422,13 +425,13 @@ The accessmodify action can be used to add/remove/replace network tags from the 
  Enter amount of Fabric Studio's : 2
  Enter start of numbered range : 1
  What network tag action would you like 1) Add, 2) Remove, 3) Replace : 1
- Provide the network tag and value e.g. name=value : purpose=fortipoc
+ Provide the network tag and value e.g. name=value : purpose=fFabricStudioabricstudio
 
 Okay to accessmodify fpoc-fk-test-001 till fpoc-fk-test-002, Project=dummy, region=europe-west2-a.   y/n? y
 ==> Lets go...using Owner=fkemps or Group=demo, Project=dummy, Zone=europe-west2-a, Product=test, Action=accessmodify
 
-==> Adding network tag purpose=fortipoc to instance fpoc-fk-test-001
-==> Adding network tag purpose=fortipoc to instance fpoc-fk-test-002
+==> Adding network tag purpose=fabricstudio to instance fpoc-fk-test-001
+==> Adding network tag purpose=fabricstudio to instance fpoc-fk-test-002
 ```
 
 * Remove   
@@ -490,16 +493,16 @@ Listing labels of selected instances
 
 Instancename     : labels
 ---------------------------------------------------------------------------------
-fpoc-fk-test-001 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-002 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-003 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-004 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-005 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-006 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-007 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-008 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-009 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
-fpoc-fk-test-010 : expire=2024-12-31,group=demo,owner=fkemps,purpose=fortipoc
+fpoc-fk-test-001 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-002 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-003 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-004 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-005 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-006 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-007 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-008 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-009 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
+fpoc-fk-test-010 : expire=2024-12-31,group=demo,owner=fkemps,purpose=FabricStudio
 ```
 
 You can request a global overview of the labels as well
@@ -517,9 +520,9 @@ Listing all global instances and labels for Project:fkemps-cse-labs Owner:fkemps
 ├───────────────────┬─────────────────┬─────────────────────────────────────────────────────────────────────────────────--──────┬────────────┤
 │      INSTANCE     │        ZONE     │                                           LABELS                                        │   STATUS   │
 ├───────────────────┼─────────────────┼─────────────────────────────────────────────────────────────────────────────────────────┼────────────┤
-│ fpoc-fk-test-001  │ europe-west4-a  │ {'expire': '31-12-2025', 'group': 'demo', 'owner': 'fkemps', 'purpose': 'fortipoc'}     │ TERMINATED │
-│ fpoc-fk-test-002  │ europe-west4-a  │ {'expire': '31-12-2025', 'group': 'demo', 'owner': 'fkemps',  purpose': 'fortipoc'}     │ TERMINATED │
-│ fpoc-fk-test-003  │ europe-west4-a  │ {'expire': '31-12-2025', 'group': 'demo', 'owner': 'fkemps', 'purpose': 'fortipoc'}     │ TERMINATED │
+│ fpoc-fk-test-001  │ europe-west4-a  │ {'expire': '31-12-2025', 'group': 'demo', 'owner': 'fkemps', 'purpose': 'FabricStudio'}     │ TERMINATED │
+│ fpoc-fk-test-002  │ europe-west4-a  │ {'expire': '31-12-2025', 'group': 'demo', 'owner': 'fkemps',  purpose': 'FabricStudio'}     │ TERMINATED │
+│ fpoc-fk-test-003  │ europe-west4-a  │ {'expire': '31-12-2025', 'group': 'demo', 'owner': 'fkemps', 'purpose': 'FabricStudio'}     │ TERMINATED │
 └───────────────────┴─────────────────┴─────────────────────────────────────────────────────────────────────────────────────────┴────────────┘
 ```
 
@@ -538,13 +541,13 @@ The labelmodify action can be used to add/remove/replace labels from the selecte
  Enter amount of Fabric Studio's : 2
  Enter start of numbered range : 1
  What label action would you like 1) Add, 2) Remove, 3) Replace : 1
- Provide the label and value e.g. name=value : purpose=fortipoc
+ Provide the label and value e.g. name=value : purpose=FabricStudio
 
 Okay to labelmodify fpoc-fk-test-001 till fpoc-fk-test-002, Project=dummy, region=europe-west2-a.   y/n? y
 ==> Lets go...using Owner=fkemps or Group=demo, Project=dummy, Zone=europe-west2-a, Product=test, Action=labelmodify
 
-==> Adding label purpose=fortipoc to instance fpoc-fk-test-001
-==> Adding label purpose=fortipoc to instance fpoc-fk-test-002
+==> Adding label purpose=FabricStudio to instance fpoc-fk-test-001
+==> Adding label purpose=FabricStudio to instance fpoc-fk-test-002
 ```
 
 * Remove   
@@ -836,7 +839,7 @@ GCPCMD_SERVICEACCOUNT[1]="1234567890-compute@developer.gserviceaccount.com"
 GCPCMD_LICENSESERVER[1]=""
 GCPCMD_FPPREPEND[1]="jd"
 GCPCMD_ZONE[1]="europe-west1-a"
-GCPCMD_LABELS[1]="purpose=fortipoc,owner=jdoe"
+GCPCMD_LABELS[1]="purpose=FabricStudio,owner=jdoe"
 GCPCMD_FPGROUP[1]="clowns"
 GCPCMD_PRODUCT[1]="event"
 GCPCMD_SSHKEYPERSONAL[1]="ssh-rsa ARBCDEDGHIJKLMNOPQRSTUVWXYZAAAB3NzaC1yc2EAAAADA....1234567890 jdoe@JD-MacBook.local"
@@ -848,7 +851,7 @@ GCPCMD_SERVICEACCOUNT[2]="1234567890-compute@developer.gserviceaccount.com"
 GCPCMD_LICENSESERVER[2]="10.10.10.10"
 GCPCMD_FPPREPEND[2]="jd"
 GCPCMD_ZONE[2]="asia-southeast1-b"
-GCPCMD_LABELS[2]="purpose=fortipoc,owner=jdoe"
+GCPCMD_LABELS[2]="purpose=FabricStudio,owner=jdoe"
 GCPCMD_FPGROUP[2]="clowns"
 GCPCMD_PRODUCT[2]="test"
 GCPCMD_SSHKEYPERSONAL[2]="ssh-rsa ARBCDEDGHIJKLMNOPQRSTUVWXYZAAAB3NzaC1yc2EAAAADA....1234567890 jdoe@JD-MacBook.local"
@@ -861,11 +864,11 @@ This option allows you to upload a file to your bucket (images-<yourname>) and c
 
 ```script
 This option allows you to upload a tar.gz file as an image
- What is the image filename (full path)? : fortipoc-1.9_1.9.11.cloud.tar.gz
- Provide image filename for GCP (to build an instance)  : fortipoc-1-9-11
+ What is the image filename (full path)? : FabricStudio-1.9_1.9.11.cloud.tar.gz
+ Provide image filename for GCP (to build an instance)  : FabricStudio-1-9-11
 
- Copying fortipoc-1.9_1.9.11.cloud.tar.gz to you bucket gs://images-fkemps/
-Copying file://fortipoc-1.9_1.9.11.cloud.tar.gz [Content-Type=application/x-tar]...
+ Copying FabricStudio-1.9_1.9.11.cloud.tar.gz to you bucket gs://images-fkemps/
+Copying file://FabricStudio-1.9_1.9.11.cloud.tar.gz [Content-Type=application/x-tar]...
 ==> NOTE: You are uploading one or more large file(s), which would run
 significantly faster if you enable parallel composite uploads. This
 feature can be enabled by editing the
@@ -881,10 +884,10 @@ so slow that gsutil disables downloads of composite objects.
 - [1 files][809.6 MiB/809.6 MiB]   50.2 MiB/s
 Operation completed over 1 objects/809.6 MiB.
 
- Building your image file fortipoc-1-9-11
-Created [https://www.googleapis.com/compute/v1/projects/fkemps-cse-labs/global/images/fortipoc-1-9-11].
+ Building your image file FabricStudio-1-9-11
+Created [https://www.googleapis.com/compute/v1/projects/fkemps-cse-labs/global/images/FabricStudio-1-9-11].
 NAME             PROJECT          FAMILY    DEPRECATED  STATUS
-fortipoc-1-9-11  dummy            fortipoc              READY
+FabricStudio-1-9-11  dummy            FabricStudio              READY
 ```
 
 
